@@ -23,11 +23,11 @@ public class GlobalExceptionHandler {
      * @param ex
      * @return
      */
-    @ExceptionHandler
+    /*@ExceptionHandler
     public Result exceptionHandler(PermissionDeniedException ex) {
         log.error("异常信息：{}", ex.getMessage());
         return Result.error("抱歉,您没有对应权限");
-    }
+    }*/
 
     @ExceptionHandler
     public Result exceptionHandler(SQLIntegrityConstraintViolationException ex) {
