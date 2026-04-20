@@ -14,12 +14,10 @@ import com.sky.vo.EmployeeLoginVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,6 +46,11 @@ public class EmployeeController {
         log.info("员工登录：{}", employeeLoginDTO);
 
         Employee employee = employeeService.login(employeeLoginDTO);
+        log.info("校验员工帐号状态：{}", employee.getStatus());
+        if (employee.getStatus() == 0){
+            return Result.error("账号被禁用");
+        }
+        log.info("员工登录成功");
 
         //登录成功后，生成jwt令牌
         Map<String, Object> claims = new HashMap<>();
@@ -71,7 +74,7 @@ public class EmployeeController {
      */
     @PostMapping
     @ApiOperation(value = "添加员工")
-    public Result save(@RequestBody EmployeeDTO employeeDTO) {
+    public Result save(@RequestBody EmployeeDTO employeeDTO) throws Exception {
         log.info("添加员工：{}", employeeDTO);
         employeeService.save(employeeDTO);
         return Result.success();
@@ -83,8 +86,23 @@ public class EmployeeController {
     @ApiOperation(value = "分页查询员工")
     public Result pageQuery(  EmployeePageQueryDTO employeePageQueryDTO) {
         log.info("分页查询员工：{}", employeePageQueryDTO);
-        PageResult page = employeeService.pageQuery(employeePageQueryDTO);
+        PageResult page = employeeService.page(employeePageQueryDTO);
         return Result.success(page);
+    }
+
+    /**
+     * 员工帐号状态设置
+     * @param status
+     * @param id
+     * @return
+     * @throws Exception
+     */
+
+    @PostMapping("/status/{status}")
+    @ApiOperation(value = "员工状态")
+    public Result updateStatus(@PathVariable Integer status, Long id) throws Exception {
+        employeeService.updateStatus(status, id);
+        return  Result.success();
     }
 
     /**

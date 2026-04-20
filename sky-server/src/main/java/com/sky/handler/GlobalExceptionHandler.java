@@ -2,6 +2,7 @@ package com.sky.handler;
 
 import com.sky.constant.MessageConstant;
 import com.sky.exception.BaseException;
+import com.sky.exception.PermissionDeniedException;
 import com.sky.result.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,9 +24,9 @@ public class GlobalExceptionHandler {
      * @return
      */
     @ExceptionHandler
-    public Result exceptionHandler(BaseException ex) {
+    public Result exceptionHandler(PermissionDeniedException ex) {
         log.error("异常信息：{}", ex.getMessage());
-        return Result.error(ex.getMessage());
+        return Result.error("抱歉,您没有对应权限");
     }
 
     @ExceptionHandler
@@ -37,6 +38,11 @@ public class GlobalExceptionHandler {
             return Result.error(ex.getMessage().split(" ")[2] + MessageConstant.EXTSIST_USERNAME);
         }
         return Result.error(MessageConstant.UNKNOWN_ERROR);
+    }
+    @ExceptionHandler
+    public Result exceptionHandler(BaseException ex) {
+        log.error("异常信息：{}", ex.getMessage());
+        return Result.error(ex.getMessage());
     }
 
 }

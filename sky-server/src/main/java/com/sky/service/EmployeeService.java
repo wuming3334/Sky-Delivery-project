@@ -6,8 +6,6 @@ import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
 import com.sky.result.PageResult;
 
-import java.util.List;
-
 public interface EmployeeService {
 
     /**
@@ -23,11 +21,14 @@ public interface EmployeeService {
      *
      * @param
      */
-    void save(EmployeeDTO employeeDTO);
+    void save(EmployeeDTO employeeDTO) throws Exception;
 
     /**
      * 分页查询员工
+     *
      * @param employeePageQueryDTO
      */
-    PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
+    PageResult page(EmployeePageQueryDTO employeePageQueryDTO);
+
+    void updateStatus(Integer status, Long id) throws Exception;
 }
