@@ -122,6 +122,7 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param status
      * @param id
      */
+    //TODO 权限管理尚未实现
     @Override
     public  void updateStatus(Integer status, Long id) throws Exception {
         //创建员工对象封装属性
@@ -143,5 +144,33 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
         employeeMapper.update(emp);
     }
+
+    /**
+     * 根据id获取员工信息,用于查询回显
+     * @param id
+     * @return
+     */
+    @Override
+    public Employee getById(Long id) {
+        Employee employee = employeeMapper.getById(id);
+        if (employee == null) {
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        return employee;
+    }
+
+    /**
+     * 修改员工信息
+     * @param employeeDTO
+     */
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        employeeMapper.update(employee);
+    }
+
 
 }

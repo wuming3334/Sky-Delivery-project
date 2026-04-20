@@ -31,4 +31,6 @@ public interface EmployeeService {
     PageResult page(EmployeePageQueryDTO employeePageQueryDTO);
 
     void updateStatus(Integer status, Long id) throws Exception;
+    Employee getById(Long id);
+    public void update(EmployeeDTO employeeDTO);
 }
