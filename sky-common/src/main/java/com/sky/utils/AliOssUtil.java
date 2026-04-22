@@ -51,7 +51,6 @@ public class AliOssUtil {
                 ossClient.shutdown();
             }
         }
-
         //文件访问路径规则 https://BucketName.Endpoint/ObjectName
         StringBuilder stringBuilder = new StringBuilder("https://");
         stringBuilder
