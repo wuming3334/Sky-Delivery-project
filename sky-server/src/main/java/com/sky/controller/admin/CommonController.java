@@ -4,6 +4,7 @@ import com.aliyun.oss.OSSClient;
 import com.aliyun.oss.common.auth.CredentialsProviderFactory;
 import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
 import com.aliyuncs.exceptions.ClientException;
+import com.sky.constant.MessageConstant;
 import com.sky.properties.AliOssProperties;
 import com.sky.result.Result;
 import com.sky.utils.AliOssUtil;
@@ -50,6 +51,6 @@ private AliOssUtil aliOssUtil;
         } catch (IOException e) {
            log.error("文件上传失败：{}", e.getMessage());
         }
-        return null;
+        return Result.error(MessageConstant.UPLOAD_FAILED);
     }
 }

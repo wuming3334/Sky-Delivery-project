@@ -35,13 +35,13 @@ public class GlobalExceptionHandler {
         if (ex.getMessage().contains("Duplicate entry")) {
             //截取出'zhangsan'
             
-            return Result.error(ex.getMessage().split(" ")[2] + MessageConstant.EXTSIST_USERNAME);
+            return Result.error(ex.getMessage().split(" ")[2] + MessageConstant.EXTSIST_NAME);
         }
         return Result.error(MessageConstant.UNKNOWN_ERROR);
     }
     @ExceptionHandler
     public Result exceptionHandler(BaseException ex) {
-        log.error("异常信息：{}", ex.getMessage());
+        log.error("业务异常：{}", ex.getMessage());
         return Result.error(ex.getMessage());
     }
 
