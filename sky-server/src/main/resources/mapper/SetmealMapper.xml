@@ -56,4 +56,18 @@
     <insert id="save" useGeneratedKeys="true" keyProperty="id">
         insert into  setmeal values(null, #{categoryId}, #{name},#{price},#{status},#{description},#{image},#{createTime},#{createTime},#{createTime},#{createTime})
     </insert>
+    <select id="list" parameterType="Setmeal" resultType="Setmeal">
+        select * from setmeal
+        <where>
+            <if test="name != null">
+                and name like concat('%',#{name},'%')
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
 </mapper>

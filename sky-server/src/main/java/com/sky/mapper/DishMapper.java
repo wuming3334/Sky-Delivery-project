@@ -2,12 +2,9 @@ package com.sky.mapper;
 
 import com.github.pagehelper.Page;
 import com.sky.annotation.AutoFill;
-import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.enumeration.OperationType;
-import com.sky.vo.DishVO;
-import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -75,11 +72,12 @@ public interface DishMapper {
 
     /**
      * 根据菜品类型查询菜品数据
+     *
      * @param id
      * @return
      */
     //@Select("select d.*,c.name as category_name from dish d left join category c on d.category_id = #{Id} where d.status = 1;")
     @Select("select d.*,c.name as category_name from dish d left join category c on d.category_id = c.id " +
             "where d.category_id = #{id} and d.status = 1 order by d.create_time desc")
-    List<DishVO> list(Long id);
+    List<Dish> list(Long id);
 }
