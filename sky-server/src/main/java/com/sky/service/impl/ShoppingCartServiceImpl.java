@@ -73,10 +73,20 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      * 查询购物车列表
      * @return
      */
-    public List<ShoppingCart> list() {
+    public List<ShoppingCart> showShoppingCart() {
         // 获取当前用户id
         Long userId = BaseContext.getCurrentId();
         // 查询购物车列表
         return shoppingCartMapper.list(userId);
+    }
+
+    /**
+     * 清空购物车
+     */
+    public void cleanShoppingCart() {
+        // 获取当前用户id
+        Long userId = BaseContext.getCurrentId();
+        // 删除购物车数据
+        shoppingCartMapper.deleteByUserId(userId);
     }
 }
