@@ -21,7 +21,10 @@ public interface ShoppingCartMapper {
      * @return
      */
     ShoppingCart getByUserIdAndDishIdOrSetmealId(ShoppingCart shoppingCart);
-
+    /**
+     * 根据用户id查询购物车
+     */
+    List<ShoppingCart> listByUserId(Long userId);
     /**
      * 根据id更新数量
      * @param shoppingCart

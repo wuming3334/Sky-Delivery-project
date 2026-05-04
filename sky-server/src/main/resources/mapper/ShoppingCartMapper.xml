@@ -33,6 +33,11 @@
         where user_id = #{userId}
         order by create_time desc
     </select>
+    <select id="listByUserId" resultType="com.sky.entity.ShoppingCart">
+        select * from shopping_cart
+        where user_id = #{userId}
+        order by create_time desc
+    </select>
 
     <delete id="deleteByUserId">
         delete from shopping_cart where user_id = #{userId}
