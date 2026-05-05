@@ -44,4 +44,14 @@
         </set>
         where id = #{id}
     </update>
+
+    <update id="batchCancelTimeoutOrders">
+        <foreach collection="list" item="order" separator=";">
+            update orders
+            set status = #{order.status},
+            cancel_reason = #{order.cancelReason},
+            cancel_time = #{order.cancelTime}
+            where id = #{order.id}
+        </foreach>
+    </update>
 </mapper>
