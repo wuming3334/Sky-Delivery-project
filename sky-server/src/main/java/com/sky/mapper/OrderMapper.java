@@ -1,8 +1,7 @@
 package com.sky.mapper;
 
-import com.sky.dto.OrdersDTO;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -13,12 +12,15 @@ import java.util.List;
 public interface OrderMapper {
     /**
      * 插入订单数据
+     *
      * @param orders
      */
 
     void insert(Orders orders);
+
     /**
      * 根据订单号查询订单
+     *
      * @param orderNumber
      */
     @Select("select * from orders where number = #{orderNumber}")
@@ -26,6 +28,7 @@ public interface OrderMapper {
 
     /**
      * 修改订单信息
+     *
      * @param orders
      */
     void update(Orders orders);
@@ -35,8 +38,14 @@ public interface OrderMapper {
      */
     @Select("select * from orders where status = #{status} and order_time < #{time}")
     List<Orders> getByStatusAndOrderTimeLT(Integer status, LocalDateTime time);
+
     /**
      * 批量更新
      */
-    void batchCancelTimeoutOrders (List<Orders> orders);
+    void batchCancelTimeoutOrders(List<Orders> orders);
+
+    @Select("select * from orders where id = #{id}")
+    Orders getById(Long id);
+
+    List<Orders> pageQuery(OrdersPageQueryDTO ordersPageQueryDTO);
 }

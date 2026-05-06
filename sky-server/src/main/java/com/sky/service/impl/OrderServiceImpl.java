@@ -1,31 +1,47 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.google.gson.JsonObject;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersCancelDTO;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
+import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
 import com.sky.mapper.*;
+import com.sky.result.PageResult;
 import com.sky.service.OrderService;
+import com.sky.utils.DistanceUtil;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.sky.constant.MessageConstant.ADDRESS_BOOK_IS_NULL;
+import static com.sky.constant.MessageConstant.BEYOND_DELIVERY_RANGE;
 import static com.sky.constant.MessageConstant.SHOPPING_CART_IS_NULL;
 
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
     @Autowired
@@ -39,9 +55,16 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private DishMapper dishMapper;
     @Autowired
-    private WeChatPayUtil weChatPayUtil;
-    @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private WebSocketServer webSocketServer;
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    private static final String SHOP_ADDRESS = "北京市海淀区上地十街10号";
+    private static final double MAX_DELIVERY_DISTANCE = 5000.0;
+    @Autowired
+    private DishFlavorMapper dishFlavorMapper;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -50,6 +73,10 @@ public class OrderServiceImpl implements OrderService {
         AddressBook address = addressBookMapper.getById(ordersSubmitDTO.getAddressBookId());
         if (address == null) {
             throw new RuntimeException(ADDRESS_BOOK_IS_NULL);
+        }
+
+        if (!DistanceUtil.isWithinRange(address.getDetail(), SHOP_ADDRESS, MAX_DELIVERY_DISTANCE)) {
+            throw new OrderBusinessException(BEYOND_DELIVERY_RANGE);
         }
         //获取用户id 赋值给一个购物车实体
         Long userId = BaseContext.getCurrentId();
@@ -112,6 +139,7 @@ public class OrderServiceImpl implements OrderService {
 
         return orderSubmitVO;
     }
+
     /**
      * 订单支付
      *
@@ -160,5 +188,187 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+        //来单提醒
+        pushOrderNotice(ordersDB, 1);
     }
+
+    /**
+     * 再来一单
+     *
+     * @param
+     */
+    @Override
+    public void reOrder(Long orderId) {
+        //遍历并复制订单详情的购物车数据
+        List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(orderId);
+        List<ShoppingCart> shoppingCarts = new ArrayList<>();
+        for (OrderDetail orderDetail : orderDetails) {
+            ShoppingCart shoppingCart = new ShoppingCart();
+            shoppingCart.setName(orderDetail.getName());
+            shoppingCart.setImage(orderDetail.getImage());
+            shoppingCart.setUserId(BaseContext.getCurrentId());
+            shoppingCart.setNumber(orderDetail.getNumber());
+            shoppingCart.setAmount(orderDetail.getAmount());
+            shoppingCart.setCreateTime(LocalDateTime.now());
+            if (orderDetail.getDishId() != null) {
+                shoppingCart.setDishId(orderDetail.getDishId());
+                if (orderDetail.getDishFlavor() != null) {
+                    shoppingCart.setDishFlavor(orderDetail.getDishFlavor());
+                }
+            } else {
+                shoppingCart.setSetmealId(orderDetail.getSetmealId());
+            }
+            shoppingCarts.add(shoppingCart);
+        }
+        //批量插入购物车数据
+        shoppingCartMapper.insertBatch(shoppingCarts);
+    }
+
+    /**
+     * 查询订单详情
+     *
+     * @param id 订单id
+     * @return
+     */
+    @Override
+    public OrderVO getOrderDetail(Long id) {
+        Orders orders = orderMapper.getById(id);
+
+        List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(id);
+
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        orderVO.setOrderDetailList(orderDetails);
+
+        return orderVO;
+    }
+
+    /**
+     * 取消订单
+     *
+     * @param
+     */
+    @Override
+    public void cancel(Long id) {
+        Orders orders = orderMapper.getById(id);
+        //校验异常
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (!orders.getUserId().equals(BaseContext.getCurrentId())) {
+            throw new RuntimeException("无权操作此订单");
+        }
+
+        if (orders.getStatus() > Orders.TO_BE_CONFIRMED) {
+            throw new RuntimeException("订单不能取消");
+        }
+        //修改状态 并添加必要字段
+        Orders updateOrders = Orders.builder()
+                .id(id)
+                .status(Orders.CANCELLED)
+                .cancelReason("用户取消订单")
+                .cancelTime(LocalDateTime.now())
+                .build();
+
+        orderMapper.update(updateOrders);
+    }
+
+    /**
+     * 查询用户历史订单 分页
+     *
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    @Override
+    public PageResult pageQuery4User(OrdersPageQueryDTO ordersPageQueryDTO) {
+        ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
+
+        PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
+
+        List<Orders> ordersList = orderMapper.pageQuery(ordersPageQueryDTO);
+
+        List<OrderVO> orderVOList = new ArrayList<>();
+        if (ordersList != null && !ordersList.isEmpty()) {
+            for (Orders orders : ordersList) {
+                List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(orders.getId());
+
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(orders, orderVO);
+                orderVO.setOrderDetailList(orderDetails);
+
+                orderVOList.add(orderVO);
+            }
+        }
+
+        PageInfo<Orders> pageInfo = new PageInfo<>(ordersList);
+        return new PageResult(pageInfo.getTotal(), orderVOList);
+    }
+
+    public void pushOrderNotice(Orders ordersDB, Integer status) {
+        //调用websocket，推送来单提醒或者催单提醒
+        //先定义一个map，里面存放要推送提醒数据
+        Map map = new HashMap();
+        map.put("type", status);//1表示来单提醒,2表示用户催单
+        map.put("orderId", ordersDB.getId());//订单id
+        map.put("content", "订单号:" + ordersDB.getNumber());//推送提醒内容
+        //转为 json
+        String json = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(json);
+    }
+
+    @Override
+    public void reminder(Long id) {
+        Orders orders = orderMapper.getById(id);
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        if (!orders.getUserId().equals(BaseContext.getCurrentId())) {
+            throw new RuntimeException("无权操作此订单");
+        }
+
+        if (orders.getStatus() > Orders.TO_BE_CONFIRMED) {
+            throw new RuntimeException("订单已接单，无需催单");
+        }
+        //使用redis实现订单催单功能
+        Long userId = BaseContext.getCurrentId();
+        String key = "order_reminder_" + userId + "_" + id;
+        Boolean hasReminded = redisTemplate.hasKey(key);
+        if (Boolean.TRUE.equals(hasReminded)) {
+            throw new RuntimeException("十分钟内只能催单一次");
+        }
+
+        redisTemplate.opsForValue().set(key, "1", 10, TimeUnit.MINUTES);
+
+        pushOrderNotice(orders, 2);
+    }
+
+    /**
+     * 接单
+     *
+     * @param id
+     */
+    @Override
+    public void confirm(Long id) {
+        Orders orders = orderMapper.getById(id);
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        if (!orders.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            throw new RuntimeException("订单状态不是待接单，无法接单");
+        }
+
+        Orders updateOrders = Orders.builder()
+                .id(id)
+                .status(Orders.CONFIRMED)
+                .build();
+
+        orderMapper.update(updateOrders);
+    }
+
+
 }
+
