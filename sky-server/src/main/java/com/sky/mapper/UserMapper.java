@@ -1,8 +1,11 @@
 package com.sky.mapper;
 
+import com.sky.dto.DateGroupDTO;
 import com.sky.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+
+import java.time.LocalDateTime;
 
 @Mapper
 public interface UserMapper {
@@ -27,4 +30,14 @@ public interface UserMapper {
      */
     @Select("select * from user where id = #{id}")
     User getById(Long id);
+
+    /**
+     * 根据时间范围统计用户数量（旧方法，保留兼容）
+     */
+    Integer countByTime(LocalDateTime begin, LocalDateTime end);
+
+    /**
+     * 批量查询新增用户统计（按日期分组）
+     */
+    List<DateGroupDTO> countNewUserGroupByDate(LocalDateTime begin, LocalDateTime end);
 }

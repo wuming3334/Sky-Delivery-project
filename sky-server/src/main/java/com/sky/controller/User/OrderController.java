@@ -104,10 +104,10 @@ public class OrderController {
     /**
      * 商户接单
      */
-    @PutMapping("/confirm")
+   @PutMapping("/confirm")
     @ApiOperation("商户接单")
-    public Result accept(Long  id) {
-        orderService.confirm(id);
+    public Result confirm(Long  id) {
+        orderService.accept(id);
         return Result.success();
     }
 

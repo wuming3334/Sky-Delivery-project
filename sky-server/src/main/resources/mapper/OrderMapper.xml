@@ -79,4 +79,46 @@
         </where>
         order by order_time desc
     </select>
+
+    <select id="countByStatus" resultType="java.lang.Integer">
+        select count(*) from orders where status = #{status}
+    </select>
+
+    <select id="sumByTimeAndStatus" resultType="java.lang.Double">
+        select sum(amount) from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end} and status = #{status}
+    </select>
+
+    <select id="sumAmountGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(order_time) as date, SUM(amount) as value
+        from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end} and status = #{status}
+        group by DATE(order_time)
+        order by date
+    </select>
+
+    <select id="countByTime" resultType="java.lang.Integer">
+        select count(*) from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end}
+    </select>
+
+    <select id="countOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(order_time) as date, COUNT(*) as value
+        from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end}
+        group by DATE(order_time)
+        order by date
+    </select>
+
+    <select id="countValidOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(order_time) as date, COUNT(*) as value
+        from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end}
+        and status in
+        <foreach collection="statusList" item="status" open="(" separator="," close=")">
+            #{status}
+        </foreach>
+        group by DATE(order_time)
+        order by date
+    </select>
 </mapper>

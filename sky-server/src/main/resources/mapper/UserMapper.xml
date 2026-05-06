@@ -8,4 +8,15 @@
         values (#{openid}, #{name}, #{phone}, #{sex}, #{idNumber}, #{avatar}, #{createTime})
     </insert>
 
+    <select id="countByTime" resultType="java.lang.Integer">
+        select count(*) from user where create_time &gt;= #{begin} and create_time &lt; #{end}
+    </select>
+
+    <select id="countNewUserGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(create_time) as date, COUNT(*) as value
+        from user
+        where create_time &gt;= #{begin} and create_time &lt; #{end}
+        group by DATE(create_time)
+        order by date
+    </select>
 </mapper>

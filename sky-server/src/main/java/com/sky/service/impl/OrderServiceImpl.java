@@ -7,8 +7,10 @@ import com.github.pagehelper.PageInfo;
 import com.google.gson.JsonObject;
 import com.sky.context.BaseContext;
 import com.sky.dto.OrdersCancelDTO;
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
+import com.sky.dto.OrdersRejectionDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
@@ -19,6 +21,7 @@ import com.sky.service.OrderService;
 import com.sky.utils.DistanceUtil;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import com.sky.websocket.WebSocketServer;
@@ -350,7 +353,7 @@ public class OrderServiceImpl implements OrderService {
      * @param id
      */
     @Override
-    public void confirm(Long id) {
+    public void accept(Long id) {
         Orders orders = orderMapper.getById(id);
 
         if (orders == null) {
@@ -364,6 +367,188 @@ public class OrderServiceImpl implements OrderService {
         Orders updateOrders = Orders.builder()
                 .id(id)
                 .status(Orders.CONFIRMED)
+                .build();
+
+        orderMapper.update(updateOrders);
+    }
+
+    /**
+     * 商家端订单分页查询
+     *
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    @Override
+    public PageResult pageQuery(OrdersPageQueryDTO ordersPageQueryDTO) {
+        PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
+
+        List<Orders> ordersList = orderMapper.pageQuery(ordersPageQueryDTO);
+
+        List<OrderVO> orderVOList = new ArrayList<>();
+        if (ordersList != null && !ordersList.isEmpty()) {
+            for (Orders orders : ordersList) {
+                List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(orders.getId());
+
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(orders, orderVO);
+                orderVO.setOrderDetailList(orderDetails);
+
+                orderVOList.add(orderVO);
+            }
+        }
+
+        PageInfo<Orders> pageInfo = new PageInfo<>(ordersList);
+        return new PageResult(pageInfo.getTotal(), orderVOList);
+    }
+
+    /**
+     * 各个状态订单数量统计
+     *
+     * @return
+     */
+    @Override
+    public OrderStatisticsVO statistics() {
+        // 待接单数量
+        Integer toBeConfirmed = orderMapper.countByStatus(Orders.TO_BE_CONFIRMED);
+        // 已接单（待派送）数量
+        Integer confirmed = orderMapper.countByStatus(Orders.CONFIRMED);
+        // 派送中数量
+        Integer deliveryInProgress = orderMapper.countByStatus(Orders.DELIVERY_IN_PROGRESS);
+
+        return OrderStatisticsVO.builder()
+                .toBeConfirmed(toBeConfirmed)
+                .confirmed(confirmed)
+                .deliveryInProgress(deliveryInProgress)
+                .build();
+    }
+
+    /**
+     * 查询订单详情
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public OrderVO details(Long id) {
+        Orders orders = orderMapper.getById(id);
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        List<OrderDetail> orderDetails = orderDetailMapper.getByOrderId(id);
+
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        orderVO.setOrderDetailList(orderDetails);
+
+        return orderVO;
+    }
+
+    /**
+     * 拒单
+     *
+     * @param ordersRejectionDTO
+     */
+    @Override
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) {
+        Orders orders = orderMapper.getById(ordersRejectionDTO.getId());
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        // 只有待接单状态的订单才能拒单
+        if (!orders.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            throw new RuntimeException("订单状态不是待接单，无法拒单");
+        }
+
+        Orders updateOrders = Orders.builder()
+                .id(ordersRejectionDTO.getId())
+                .status(Orders.CANCELLED)
+                .rejectionReason(ordersRejectionDTO.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+
+        orderMapper.update(updateOrders);
+    }
+
+    /**
+     * 商家取消订单
+     *
+     * @param ordersCancelDTO
+     */
+    @Override
+    public void cancel(OrdersCancelDTO ordersCancelDTO) {
+        Orders orders = orderMapper.getById(ordersCancelDTO.getId());
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        // 只有已接单状态的订单才能由商家取消
+        if (!orders.getStatus().equals(Orders.CONFIRMED)) {
+            throw new RuntimeException("订单状态不是已接单，无法取消");
+        }
+
+        Orders updateOrders = Orders.builder()
+                .id(ordersCancelDTO.getId())
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersCancelDTO.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+
+        orderMapper.update(updateOrders);
+    }
+
+    /**
+     * 派送订单
+     *
+     * @param id
+     */
+    @Override
+    public void delivery(Long id) {
+        Orders orders = orderMapper.getById(id);
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        // 只有已接单状态的订单才能派送
+        if (!orders.getStatus().equals(Orders.CONFIRMED)) {
+            throw new RuntimeException("订单状态不是已接单，无法派送");
+        }
+
+        Orders updateOrders = Orders.builder()
+                .id(id)
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+
+        orderMapper.update(updateOrders);
+    }
+
+    /**
+     * 完成订单
+     *
+     * @param id
+     */
+    @Override
+    public void complete(Long id) {
+        Orders orders = orderMapper.getById(id);
+
+        if (orders == null) {
+            throw new RuntimeException("订单不存在");
+        }
+
+        // 只有派送中状态的订单才能完成
+        if (!orders.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)) {
+            throw new RuntimeException("订单状态不是派送中，无法完成");
+        }
+
+        Orders updateOrders = Orders.builder()
+                .id(id)
+                .status(Orders.COMPLETED)
+                .deliveryTime(LocalDateTime.now())
                 .build();
 
         orderMapper.update(updateOrders);
