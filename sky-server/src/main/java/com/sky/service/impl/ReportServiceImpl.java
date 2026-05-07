@@ -36,7 +36,7 @@ public class ReportServiceImpl implements ReportService {
     private UserMapper userMapper;
 
     /**
-     * 营业额统计（优化版：批量查询）
+     * 营业额统计（批量查询）
      */
     @Override
     public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
@@ -44,7 +44,7 @@ public class ReportServiceImpl implements ReportService {
         List<LocalDate> dateList = new ArrayList<>();
         LocalDate today = LocalDate.now();
         LocalDate actualEnd = end.isBefore(today) ? today : end;
-        
+
         LocalDate current = begin;
         dateList.add(current);
         while (!current.equals(actualEnd)) {
@@ -76,7 +76,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * 用户统计（优化版：批量查询）
+     * 用户统计（批量查询）
      */
     @Override
     public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
@@ -84,7 +84,7 @@ public class ReportServiceImpl implements ReportService {
         List<LocalDate> dateList = new ArrayList<>();
         LocalDate today = LocalDate.now();
         LocalDate actualEnd = end.isBefore(today) ? today : end;
-        
+
         LocalDate current = begin;
         dateList.add(current);
         while (!current.equals(actualEnd)) {
@@ -127,7 +127,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * 订单统计（优化版：批量查询）
+     * 订单统计批量查询
      */
     @Override
     public OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end) {
@@ -135,7 +135,7 @@ public class ReportServiceImpl implements ReportService {
         List<LocalDate> dateList = new ArrayList<>();
         LocalDate today = LocalDate.now();
         LocalDate actualEnd = end.isBefore(today) ? today : end;
-        
+
         LocalDate current = begin;
         dateList.add(current);
         while (!current.equals(actualEnd)) {
@@ -213,13 +213,13 @@ public class ReportServiceImpl implements ReportService {
         log.info("销量排行查询结果数量：{}", salesTop10.size());
 
         // 处理null值，转为字符串列表
-        String nameList = String.join(",", 
+        String nameList = String.join(",",
                 salesTop10.stream()
                         .map(GoodsSalesDTO::getName)
                         .collect(Collectors.toList()));
 
         // MySQL返回的number是BigDecimal类型，需要转换为Integer或Double
-        String numberList = String.join(",", 
+        String numberList = String.join(",",
                 salesTop10.stream()
                         .map(dto -> dto.getNumber().toString())
                         .collect(Collectors.toList()));
