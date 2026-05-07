@@ -86,14 +86,14 @@
 
     <select id="sumByTimeAndStatus" resultType="java.lang.Double">
         select sum(amount) from orders
-        where order_time &gt;= #{begin} and order_time &lt; #{end} and status = #{status}
+        where delivery_time &gt;= #{begin} and delivery_time &lt; #{end} and status = #{status}
     </select>
 
     <select id="sumAmountGroupByDate" resultType="com.sky.dto.DateGroupDTO">
-        select DATE(order_time) as date, SUM(amount) as value
+        select DATE(delivery_time) as date, SUM(amount) as value
         from orders
-        where order_time &gt;= #{begin} and order_time &lt; #{end} and status = #{status}
-        group by DATE(order_time)
+        where delivery_time &gt;= #{begin} and delivery_time &lt; #{end} and status = #{status}
+        group by DATE(delivery_time)
         order by date
     </select>
 
@@ -111,14 +111,14 @@
     </select>
 
     <select id="countValidOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
-        select DATE(order_time) as date, COUNT(*) as value
+        select DATE(delivery_time) as date, COUNT(*) as value
         from orders
-        where order_time &gt;= #{begin} and order_time &lt; #{end}
+        where delivery_time &gt;= #{begin} and delivery_time &lt; #{end}
         and status in
         <foreach collection="statusList" item="status" open="(" separator="," close=")">
             #{status}
         </foreach>
-        group by DATE(order_time)
+        group by DATE(delivery_time)
         order by date
     </select>
 </mapper>

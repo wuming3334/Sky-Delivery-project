@@ -78,10 +78,11 @@ public class ReportServiceImpl implements ReportService {
     public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
         // 生成日期列表
         List<LocalDate> dateList = new ArrayList<>();
-        dateList.add(begin);
-        while (!begin.equals(end)) {
-            begin = begin.plusDays(1);
-            dateList.add(begin);
+        LocalDate current = begin;
+        dateList.add(current);
+        while (!current.equals(end)) {
+            current = current.plusDays(1);
+            dateList.add(current);
         }
 
         // 批量查询：一次SQL获取所有日期的新增用户数
@@ -96,19 +97,19 @@ public class ReportServiceImpl implements ReportService {
                         dto -> dto.getValue() != null ? dto.getValue().intValue() : 0
                 ));
 
-        // 按日期顺序填充数据，并计算累计总用户数
+        // 按日期顺序填充数据
         List<Integer> newUserList = new ArrayList<>();
         List<Integer> totalUserList = new ArrayList<>();
-        int cumulativeTotal = 0;
 
         for (LocalDate date : dateList) {
             // 当日新增用户
             Integer newUserCount = newUserMap.getOrDefault(date.toString(), 0);
             newUserList.add(newUserCount);
 
-            // 累计总用户数
-            cumulativeTotal += newUserCount;
-            totalUserList.add(cumulativeTotal);
+            // 总用户数：截至当天结束的累计注册用户数
+            LocalDateTime dayEndTime = LocalDateTime.of(date.plusDays(1), LocalTime.MIN);
+            Integer totalUserCount = userMapper.countByTime(LocalDateTime.of(2000, 1, 1, 0, 0, 0), dayEndTime);
+            totalUserList.add(totalUserCount != null ? totalUserCount : 0);
         }
 
         return UserReportVO.builder()
@@ -192,9 +193,13 @@ public class ReportServiceImpl implements ReportService {
         // 结束日期加一天，确保包含end当天所有数据
         LocalDateTime endTime = LocalDateTime.of(end.plusDays(1), LocalTime.MIN);
 
+        log.info("销量排行查询时间范围：{} ~ {}", beginTime, endTime);
+
         // 只统计已完成的订单
         List<Integer> validStatusList = Arrays.asList(Orders.COMPLETED);
         List<GoodsSalesDTO> salesTop10 = orderDetailMapper.getSalesTop10(beginTime, endTime, validStatusList);
+
+        log.info("销量排行查询结果数量：{}", salesTop10.size());
 
         // 处理null值，转为字符串列表
         String nameList = String.join(",", 
