@@ -40,17 +40,25 @@ public class ReportServiceImpl implements ReportService {
      */
     @Override
     public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
-        // 生成日期列表
+        // 生成日期列表（确保包含今天）
         List<LocalDate> dateList = new ArrayList<>();
-        dateList.add(begin);
-        while (!begin.equals(end)) {
-            begin = begin.plusDays(1);
-            dateList.add(begin);
+        LocalDate current = begin;
+        LocalDate today = LocalDate.now();
+        dateList.add(current);
+        while (!current.equals(end) && !current.isAfter(today)) {
+            current = current.plusDays(1);
+            if (!current.isAfter(today)) {
+                dateList.add(current);
+            }
+        }
+        // 如果end不是今天，需要补充今天
+        if (today.isAfter(end) && !dateList.contains(today)) {
+            dateList.add(today);
         }
 
         // 批量查询：一次SQL获取所有日期的营业额
         LocalDateTime beginTime = LocalDateTime.of(dateList.get(0), LocalTime.MIN);
-        LocalDateTime endTime = LocalDateTime.of(dateList.get(dateList.size() - 1).plusDays(1), LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.now();
         List<DateGroupDTO> turnoverData = orderMapper.sumAmountGroupByDate(beginTime, endTime, Orders.COMPLETED);
 
         // 将查询结果转为Map，方便查找
@@ -76,18 +84,25 @@ public class ReportServiceImpl implements ReportService {
      */
     @Override
     public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
-        // 生成日期列表
+        // 生成日期列表（确保包含今天）
         List<LocalDate> dateList = new ArrayList<>();
         LocalDate current = begin;
+        LocalDate today = LocalDate.now();
         dateList.add(current);
-        while (!current.equals(end)) {
+        while (!current.equals(end) && !current.isAfter(today)) {
             current = current.plusDays(1);
-            dateList.add(current);
+            if (!current.isAfter(today)) {
+                dateList.add(current);
+            }
+        }
+        // 如果end不是今天，需要补充今天
+        if (today.isAfter(end) && !dateList.contains(today)) {
+            dateList.add(today);
         }
 
         // 批量查询：一次SQL获取所有日期的新增用户数
         LocalDateTime beginTime = LocalDateTime.of(dateList.get(0), LocalTime.MIN);
-        LocalDateTime endTime = LocalDateTime.of(dateList.get(dateList.size() - 1).plusDays(1), LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.now();
         List<DateGroupDTO> newUserListData = userMapper.countNewUserGroupByDate(beginTime, endTime);
 
         // 将查询结果转为Map
@@ -124,17 +139,25 @@ public class ReportServiceImpl implements ReportService {
      */
     @Override
     public OrderReportVO getOrderStatistics(LocalDate begin, LocalDate end) {
-        // 生成日期列表
+        // 生成日期列表（确保包含今天）
         List<LocalDate> dateList = new ArrayList<>();
-        dateList.add(begin);
-        while (!begin.equals(end)) {
-            begin = begin.plusDays(1);
-            dateList.add(begin);
+        LocalDate current = begin;
+        LocalDate today = LocalDate.now();
+        dateList.add(current);
+        while (!current.equals(end) && !current.isAfter(today)) {
+            current = current.plusDays(1);
+            if (!current.isAfter(today)) {
+                dateList.add(current);
+            }
+        }
+        // 如果end不是今天，需要补充今天
+        if (today.isAfter(end) && !dateList.contains(today)) {
+            dateList.add(today);
         }
 
         // 批量查询：一次SQL获取所有日期的订单总数
         LocalDateTime beginTime = LocalDateTime.of(dateList.get(0), LocalTime.MIN);
-        LocalDateTime endTime = LocalDateTime.of(dateList.get(dateList.size() - 1).plusDays(1), LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.now();
         List<DateGroupDTO> orderCountData = orderMapper.countOrderGroupByDate(beginTime, endTime);
 
         // 批量查询：一次SQL获取所有日期的有效订单数
@@ -190,8 +213,8 @@ public class ReportServiceImpl implements ReportService {
     public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
         // LocalDate转LocalDateTime
         LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
-        // 结束日期加一天，确保包含end当天所有数据
-        LocalDateTime endTime = LocalDateTime.of(end.plusDays(1), LocalTime.MIN);
+        // 结束时间使用当前时刻，确保包含已完成的实时数据
+        LocalDateTime endTime = LocalDateTime.now();
 
         log.info("销量排行查询时间范围：{} ~ {}", beginTime, endTime);
 
