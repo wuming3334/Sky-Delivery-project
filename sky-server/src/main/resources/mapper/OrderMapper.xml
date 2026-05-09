@@ -126,16 +126,33 @@
         order by date
     </select>
 
-    <!-- 按日期分组统计有效订单数（使用送达时间），用于订单完成率计算 -->
-    <select id="countValidOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
-        select DATE(delivery_time) as date, COUNT(*) as value
+    <!-- 按日期分组统计已完成订单数 -->
+    <select id="countCompletedOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(delivery_time) as date, count(*) as value
         from orders
-        where delivery_time &gt;= #{begin} and delivery_time &lt; #{end}
-        and status in
-        <foreach collection="statusList" item="status" open="(" separator="," close=")">
-            #{status}
-        </foreach>
+        where delivery_time &gt;= #{begin}
+          and delivery_time &lt; #{end}
+          and status = #{status}
         group by DATE(delivery_time)
-        order by date
+    </select>
+    <!-- 根据条件动态统计订单数量 -->
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(*) from orders
+        <where>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+    <!-- 根据日期分组 查询日期内订单-->
+    <select id="getByDate" resultType="com.sky.entity.Orders">
+        select * from orders
+        where order_time &gt;= #{begin} and order_time &lt;= #{end}
     </select>
 </mapper>
