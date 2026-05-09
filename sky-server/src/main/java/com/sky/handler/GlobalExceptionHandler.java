@@ -44,5 +44,13 @@ public class GlobalExceptionHandler {
         log.error("业务异常：{}", ex.getMessage());
         return Result.error(ex.getMessage());
     }
+    /**
+     * 捕获权限不足异常
+     */
+    @ExceptionHandler
+    public Result exceptionHandler(PermissionDeniedException ex) {
+        log.error("权限不足：{}", ex.getMessage());
+        return Result.error(MessageConstant.PERMISSION_DENIED);
+    }
 
 }

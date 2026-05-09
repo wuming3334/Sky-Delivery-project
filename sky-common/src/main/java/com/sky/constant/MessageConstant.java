@@ -26,4 +26,6 @@ public class MessageConstant {
     public static final String BEYOND_DELIVERY_RANGE = "超出配送范围";
 
     public static final String EXTSIST_NAME ="已存在" ;
+    public static final String PERMISSION_DENIED = "抱歉，您没有执行此操作的权限";
+
 }
