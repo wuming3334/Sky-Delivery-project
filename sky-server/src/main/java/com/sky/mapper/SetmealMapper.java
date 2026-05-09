@@ -82,4 +82,11 @@ public interface SetmealMapper {
      * @return
      */
     Integer countByMap(Map map);
+
+    /**
+     * 批量更新
+     * @param ids
+     * @param status
+     */
+    void updateStatusBatch( List<Long> ids, Integer status);
 }

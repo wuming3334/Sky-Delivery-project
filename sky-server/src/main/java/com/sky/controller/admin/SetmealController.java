@@ -2,6 +2,7 @@ package com.sky.controller.admin;
 
 import com.sky.dto.SetmealDTO;
 import com.sky.dto.SetmealPageQueryDTO;
+import com.sky.entity.Setmeal;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.SetmealService;
@@ -37,10 +38,10 @@ public class SetmealController {
      * 添加套餐
      */
     @PostMapping
-    @CacheEvict(cacheNames = "setmealCache", key = "#setmealDTO.categoryId" )
+    @CacheEvict(cacheNames = "setmealCache", key = "#setmealDTO.categoryId")
     public Result save(@RequestBody SetmealDTO setmealDTO) {
         setmealService.insertSetmeal(setmealDTO);
- /*       redisTemplate.delete("setmeal_" + setmealDTO.getCategoryId());*/
+        /*       redisTemplate.delete("setmeal_" + setmealDTO.getCategoryId());*/
         return Result.success();
     }
 
@@ -76,17 +77,13 @@ public class SetmealController {
         // 先查询分类ID
         java.util.Set<String> keysToDelete = new java.util.HashSet<>();
         for (Long id : ids) {
-            com.sky.entity.Setmeal setmeal = setmealService.getById(id);
+            Setmeal setmeal = setmealService.getById(id);
             if (setmeal != null) {
                 keysToDelete.add("setmeal_" + setmeal.getCategoryId());
             }
         }
         // 再删除数据库
         setmealService.deleteBatch(ids);
-      /*  // 最后删除缓存
-        if (!keysToDelete.isEmpty()) {
-            redisTemplate.delete(keysToDelete);
-        }*/
         return Result.success();
     }
 
@@ -135,6 +132,8 @@ public class SetmealController {
         if (setmeal != null) {
             redisTemplate.delete("setmeal_" + setmeal.getCategoryId());
         }
+
         return Result.success();
     }
+
 }
