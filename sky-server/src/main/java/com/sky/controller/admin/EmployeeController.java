@@ -1,9 +1,11 @@
 package com.sky.controller.admin;
 
+import com.sky.annotation.RequireRole;
 import com.sky.constant.JwtClaimsConstant;
 import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.dto.EmployeePageQueryDTO;
+import com.sky.dto.PasswordEditDTO;
 import com.sky.entity.Employee;
 import com.sky.properties.JwtProperties;
 import com.sky.result.PageResult;
@@ -47,7 +49,7 @@ public class EmployeeController {
 
         Employee employee = employeeService.login(employeeLoginDTO);
         log.info("校验员工帐号状态：{}", employee.getStatus());
-        if (employee.getStatus() == 0){
+        if (employee.getStatus() == 0) {
             return Result.error("账号被禁用");
         }
         log.info("员工登录成功");
@@ -55,6 +57,8 @@ public class EmployeeController {
         //登录成功后，生成jwt令牌
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.EMP_ID, employee.getId());
+        //存入权限级别
+        claims.put(JwtClaimsConstant.EMP_ROLE, employee.getRole());
         String token = JwtUtil.createJWT(
                 jwtProperties.getAdminSecretKey(),
                 jwtProperties.getAdminTtl(),
@@ -69,22 +73,26 @@ public class EmployeeController {
 
         return Result.success(employeeLoginVO);
     }
+
     /**
      * 添加员工
      */
     @PostMapping
     @ApiOperation(value = "添加员工")
+    @RequireRole("ADMIN")
     public Result save(@RequestBody EmployeeDTO employeeDTO) throws Exception {
         log.info("添加员工：{}", employeeDTO);
         employeeService.save(employeeDTO);
         return Result.success();
     }
+
     /**
      * 分页查询员工
      */
     @GetMapping("/page")
     @ApiOperation(value = "分页查询员工")
-    public Result pageQuery(  EmployeePageQueryDTO employeePageQueryDTO) {
+    @RequireRole("ADMIN")
+    public Result pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
         log.info("分页查询员工：{}", employeePageQueryDTO);
         PageResult page = employeeService.page(employeePageQueryDTO);
         return Result.success(page);
@@ -92,6 +100,7 @@ public class EmployeeController {
 
     /**
      * 员工帐号状态设置
+     *
      * @param status
      * @param id
      * @return
@@ -100,20 +109,22 @@ public class EmployeeController {
 
     @PostMapping("/status/{status}")
     @ApiOperation(value = "员工状态")
+    @RequireRole("ADMIN")
     public Result updateStatus(@PathVariable Integer status, Long id) throws Exception {
         employeeService.updateStatus(status, id);
-        return  Result.success();
+        return Result.success();
     }
 
     /**
-     *
      * 根据id查询员工
+     *
      * @param id
      * @return
      */
     @GetMapping("/{id}")
     @ApiOperation("根据id查询员工")
-    public Result<Employee> getById(@PathVariable Long id){
+    @RequireRole("ADMIN")
+    public Result<Employee> getById(@PathVariable Long id) {
         log.info("根据id查询员工：{}", id);
         Employee employee = employeeService.getById(id);
         return Result.success(employee);
@@ -121,12 +132,14 @@ public class EmployeeController {
 
     /**
      * 修改员工信息
+     *
      * @param employeeDTO
      * @return
      */
     @PutMapping
     @ApiOperation("修改员工信息")
-    public Result update(@RequestBody EmployeeDTO employeeDTO){
+    @RequireRole("ADMIN")
+    public Result update(@RequestBody EmployeeDTO employeeDTO) {
         log.info("修改员工信息：{}", employeeDTO);
         employeeService.update(employeeDTO);
         return Result.success();
@@ -140,6 +153,19 @@ public class EmployeeController {
     @ApiOperation(value = "员工退出")
     @PostMapping("/logout")
     public Result<String> logout() {
+        return Result.success();
+    }
+
+    /**
+     * 修改密码
+     * @param passwordEditDTO
+     * @return
+     */
+    @PutMapping("/editPassword")
+    @ApiOperation("修改密码")
+    public Result editPassword(@RequestBody PasswordEditDTO passwordEditDTO) {
+        log.info("修改密码：{}", passwordEditDTO);
+        employeeService.editPassword(passwordEditDTO);
         return Result.success();
     }
 

@@ -48,7 +48,11 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             Claims claims = JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(), token);
             Long empId = Long.valueOf(claims.get(JwtClaimsConstant.EMP_ID).toString());
             log.info("当前员工id：", empId);
+            String role = claims.get(JwtClaimsConstant.EMP_ROLE).toString();
+
             BaseContext.setCurrentId(empId);
+            //保存员工权限到当前线程
+            BaseContext.setCurrentRole(role);
             //3、通过，放行
             return true;
         } catch (Exception ex) {
@@ -56,5 +60,10 @@ public class JwtTokenAdminInterceptor implements HandlerInterceptor {
             response.setStatus(401);
             return false;
         }
+    }
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        BaseContext.removeCurrentId();
+        BaseContext.removeCurrentRole();
     }
 }

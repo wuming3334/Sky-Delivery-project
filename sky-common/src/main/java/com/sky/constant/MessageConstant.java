@@ -23,6 +23,9 @@ public class MessageConstant {
     public static final String DISH_BE_RELATED_BY_SETMEAL = "当前菜品关联了套餐,不能删除";
     public static final String ORDER_STATUS_ERROR = "订单状态错误";
     public static final String ORDER_NOT_FOUND = "订单不存在";
+    public static final String BEYOND_DELIVERY_RANGE = "超出配送范围";
 
     public static final String EXTSIST_NAME ="已存在" ;
+    public static final String PERMISSION_DENIED = "抱歉，您没有执行此操作的权限";
+
 }

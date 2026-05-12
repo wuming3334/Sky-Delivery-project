@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.OrderMapper">
+    <!-- 新增订单，useGeneratedKeys=true表示使用数据库自增主键，keyProperty指定将生成的主键值设置到哪个属性 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into orders (number, status, user_id, address_book_id, order_time,
+                            cancel_reason, user_name, pay_status, pack_amount, consignee,
+                            delivery_status, estimated_delivery_time, cancel_time, remark,
+                            pay_method, rejection_reason, checkout_time, address, delivery_time,
+                            phone, tableware_status, tableware_number, amount)
+        values (#{number}, #{status}, #{userId}, #{addressBookId}, #{orderTime},
+                #{cancelReason}, #{userName}, #{payStatus}, #{packAmount}, #{consignee},
+                #{deliveryStatus}, #{estimatedDeliveryTime}, #{cancelTime}, #{remark},
+                #{payMethod}, #{rejectionReason}, #{checkoutTime}, #{address}, #{deliveryTime},
+                #{phone}, #{tablewareStatus}, #{tablewareNumber}, #{amount})
+    </insert>
+
+    <!-- 更新订单信息，使用动态SQL只更新非空字段 -->
+    <update id="update" parameterType="com.sky.entity.Orders">
+        update orders
+        <set>
+            <if test="cancelReason != null and cancelReason!='' ">
+                cancel_reason=#{cancelReason},
+            </if>
+            <if test="rejectionReason != null and rejectionReason!='' ">
+                rejection_reason=#{rejectionReason},
+            </if>
+            <if test="cancelTime != null">
+                cancel_time=#{cancelTime},
+            </if>
+            <if test="payStatus != null">
+                pay_status=#{payStatus},
+            </if>
+            <if test="payMethod != null">
+                pay_method=#{payMethod},
+            </if>
+            <if test="checkoutTime != null">
+                checkout_time=#{checkoutTime},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="deliveryTime != null">
+                delivery_time = #{deliveryTime}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 批量取消超时订单，使用foreach循环执行多条UPDATE语句 -->
+    <update id="batchCancelTimeoutOrders">
+        <foreach collection="list" item="order" separator=";">
+            update orders
+            set status = #{order.status},
+            cancel_reason = #{order.cancelReason},
+            cancel_time = #{order.cancelTime}
+            where id = #{order.id}
+        </foreach>
+    </update>
+
+    <!-- 分页查询订单列表，支持多条件动态筛选 -->
+    <select id="pageQuery" resultType="com.sky.entity.Orders">
+        select * from orders
+        <where>
+            <!-- 订单号模糊查询 -->
+            <if test="number != null and number!=''">
+                and number like concat('%',#{number},'%')
+            </if>
+            <!-- 手机号模糊查询 -->
+            <if test="phone != null and phone!=''">
+                and phone like concat('%',#{phone},'%')
+            </if>
+            <!-- 用户ID精确查询 -->
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <!-- 订单状态筛选 -->
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <!-- 开始时间筛选（下单时间） -->
+            <if test="beginTime != null">
+                and order_time &gt;= #{beginTime}
+            </if>
+            <!-- 结束时间筛选（下单时间） -->
+            <if test="endTime != null">
+                and order_time &lt;= #{endTime}
+            </if>
+        </where>
+        order by order_time desc
+    </select>
+
+    <!-- 根据订单状态统计订单数量 -->
+    <select id="countByStatus" resultType="java.lang.Integer">
+        select count(*) from orders where status = #{status}
+    </select>
+
+    <!-- 根据时间范围和订单状态统计营业额（使用送达时间） -->
+    <select id="sumByTimeAndStatus" resultType="java.lang.Double">
+        select sum(amount) from orders
+        where delivery_time &gt;= #{begin} and delivery_time &lt; #{end} and status = #{status}
+    </select>
+
+    <!-- 按日期分组统计营业额（使用送达时间），用于营业额趋势图 -->
+    <select id="sumAmountGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(delivery_time) as date, SUM(amount) as value
+        from orders
+        where delivery_time &gt;= #{begin} and delivery_time &lt; #{end} and status = #{status}
+        group by DATE(delivery_time)
+        order by date
+    </select>
+
+    <!-- 根据时间范围统计订单数量（使用下单时间） -->
+    <select id="countByTime" resultType="java.lang.Integer">
+        select count(*) from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end}
+    </select>
+
+    <!-- 按日期分组统计订单总数（使用下单时间），用于订单趋势图 -->
+    <select id="countOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(order_time) as date, COUNT(*) as value
+        from orders
+        where order_time &gt;= #{begin} and order_time &lt; #{end}
+        group by DATE(order_time)
+        order by date
+    </select>
+
+    <!-- 按日期分组统计已完成订单数 -->
+    <select id="countCompletedOrderGroupByDate" resultType="com.sky.dto.DateGroupDTO">
+        select DATE(delivery_time) as date, count(*) as value
+        from orders
+        where delivery_time &gt;= #{begin}
+          and delivery_time &lt; #{end}
+          and status = #{status}
+        group by DATE(delivery_time)
+    </select>
+    <!-- 根据条件动态统计订单数量 -->
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(*) from orders
+        <where>
+            <if test="begin != null">
+                and order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and order_time &lt;= #{end}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+    <!-- 根据日期分组 查询日期内订单-->
+    <select id="getByDate" resultType="com.sky.entity.Orders">
+        select * from orders
+        where order_time &gt;= #{begin} and order_time &lt;= #{end}
+    </select>
+</mapper>

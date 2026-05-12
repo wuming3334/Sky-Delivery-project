@@ -20,7 +20,9 @@
     </select>
 
     <delete id="deleteById">
-        delete from setmeal where id = #{id}
+        delete
+        from setmeal
+        where id = #{id}
     </delete>
 
     <update id="update">
@@ -53,7 +55,43 @@
         </set>
         where id = #{id}
     </update>
+
+    <update id="updateStatusBatch">
+        update setmeal set status = #{status} where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <insert id="save" useGeneratedKeys="true" keyProperty="id">
-        insert into  setmeal values(null, #{categoryId}, #{name},#{price},#{status},#{description},#{image},#{createTime},#{createTime},#{createTime},#{createTime})
+        insert into setmeal
+        values (null, #{categoryId}, #{name}, #{price}, #{status}, #{description}, #{image}, #{createTime},
+                #{createTime}, #{createTime}, #{createTime})
     </insert>
+
+    <select id="list" parameterType="Setmeal" resultType="Setmeal">
+        select * from setmeal
+        <where>
+            <if test="name != null">
+                and name like concat('%',#{name},'%')
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+    </select>
+    <select id="countByMap" resultType="java.lang.Integer">
+        select count(id) from setmeal
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="categoryId != null">
+                and category_id = #{categoryId}
+            </if>
+        </where>
+    </select>
 </mapper>

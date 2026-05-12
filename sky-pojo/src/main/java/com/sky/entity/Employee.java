@@ -43,5 +43,7 @@ public class Employee implements Serializable {
     private Long createUser;
 
     private Long updateUser;
+    //权限级别
+    private String role;
 
 }
