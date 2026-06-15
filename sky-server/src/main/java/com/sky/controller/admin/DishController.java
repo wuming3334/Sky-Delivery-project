@@ -11,8 +11,8 @@ import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -27,7 +27,7 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping("/admin/dish")
-@Api(tags = "菜品相关接口")
+@Tag(name = "菜品相关接口")
 @Slf4j
 public class DishController {
 
@@ -44,7 +44,7 @@ public class DishController {
      * @return
      */
     @PostMapping
-    @ApiOperation("新增菜品")
+    @Operation(summary = "新增菜品")
     /*    @AutoRedisDelete(OperationType2.INSERT)*/
     //AOP 实现缓存的删除
 /*    @AutoRedisDelete(keyPrefix = "dish_", categoryIdField = "categoryId")*/
@@ -69,7 +69,7 @@ public class DishController {
      * @return
      */
     @GetMapping("/page")
-    @ApiOperation("菜品分页查询")
+    @Operation(summary = "菜品分页查询")
     public Result<PageResult> page(DishPageQueryDTO dishPageQueryDTO) {
         log.info("菜品分页查询：{}", dishPageQueryDTO);
         PageResult pageResult = dishService.pageQuery(dishPageQueryDTO);
@@ -84,7 +84,7 @@ public class DishController {
      */
     /*    @AutoRedisDelete(OperationType2.DELETE)*/
     @DeleteMapping
-    @ApiOperation("菜品批量删除")
+    @Operation(summary = "菜品批量删除")
     //AOP 实现缓存的删除
 /*    @AutoRedisDelete(keyPrefix = "dish_", categoryIdField = "categoryId")*/
     public Result delete(@RequestParam List<Long> ids) {
@@ -101,7 +101,7 @@ public class DishController {
      * @return
      */
     @GetMapping("/{id}")
-    @ApiOperation("根据id查询菜品")
+    @Operation(summary = "根据id查询菜品")
     public Result<DishVO> getById(@PathVariable Long id) {
         log.info("根据id查询菜品：{}", id);
         DishVO dishVO = dishService.getByIdWithFlavor(id);
@@ -116,7 +116,7 @@ public class DishController {
      */
     /*    @AutoRedisDelete(OperationType2.UPDATE)*/
     @PutMapping
-    @ApiOperation("修改菜品")
+    @Operation(summary = "修改菜品")
     //AOP 实现缓存的删除
 /*    @AutoRedisDelete(keyPrefix = "dish_", categoryIdField = "categoryId")*/
     public Result update(@RequestBody DishDTO dishDTO) {
@@ -127,7 +127,7 @@ public class DishController {
     }
 
     @GetMapping("/list")
-    @ApiOperation("根据分类id查询菜品")
+    @Operation(summary = "根据分类id查询菜品")
     public Result<List<DishVO>> list(Long categoryId) {
         log.info("根据分类id查询菜品：{}", categoryId);
         List<DishVO> list = dishService.listByid(categoryId);
@@ -143,7 +143,7 @@ public class DishController {
      */
     @Transactional(rollbackFor = Exception.class)
     @PostMapping("/status/{status}")
-    @ApiOperation("菜品起售停售")
+    @Operation(summary = "菜品起售停售")
     public Result startOrStop(@PathVariable Integer status, Long id) {
         log.info("菜品起售停售：{}, {}", status, id);
 

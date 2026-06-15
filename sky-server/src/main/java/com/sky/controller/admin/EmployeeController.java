@@ -13,8 +13,8 @@ import com.sky.result.Result;
 import com.sky.service.EmployeeService;
 import com.sky.utils.JwtUtil;
 import com.sky.vo.EmployeeLoginVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin/employee")
 @Slf4j
-@Api(tags = "员工相关接口")
+@Tag(name = "员工相关接口")
 public class EmployeeController {
 
     @Autowired
@@ -43,7 +43,7 @@ public class EmployeeController {
      * @return
      */
     @PostMapping("/login")
-    @ApiOperation(value = "员工登录")
+    @Operation(summary = "员工登录")
     public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDTO employeeLoginDTO) {
         log.info("员工登录：{}", employeeLoginDTO);
 
@@ -78,7 +78,7 @@ public class EmployeeController {
      * 添加员工
      */
     @PostMapping
-    @ApiOperation(value = "添加员工")
+    @Operation(summary = "添加员工")
     @RequireRole("ADMIN")
     public Result save(@RequestBody EmployeeDTO employeeDTO) throws Exception {
         log.info("添加员工：{}", employeeDTO);
@@ -90,7 +90,7 @@ public class EmployeeController {
      * 分页查询员工
      */
     @GetMapping("/page")
-    @ApiOperation(value = "分页查询员工")
+    @Operation(summary = "分页查询员工")
     @RequireRole("ADMIN")
     public Result pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
         log.info("分页查询员工：{}", employeePageQueryDTO);
@@ -108,7 +108,7 @@ public class EmployeeController {
      */
 
     @PostMapping("/status/{status}")
-    @ApiOperation(value = "员工状态")
+    @Operation(summary = "员工状态")
     @RequireRole("ADMIN")
     public Result updateStatus(@PathVariable Integer status, Long id) throws Exception {
         employeeService.updateStatus(status, id);
@@ -122,7 +122,7 @@ public class EmployeeController {
      * @return
      */
     @GetMapping("/{id}")
-    @ApiOperation("根据id查询员工")
+    @Operation(summary = "根据id查询员工")
     @RequireRole("ADMIN")
     public Result<Employee> getById(@PathVariable Long id) {
         log.info("根据id查询员工：{}", id);
@@ -137,7 +137,7 @@ public class EmployeeController {
      * @return
      */
     @PutMapping
-    @ApiOperation("修改员工信息")
+    @Operation(summary = "修改员工信息")
     @RequireRole("ADMIN")
     public Result update(@RequestBody EmployeeDTO employeeDTO) {
         log.info("修改员工信息：{}", employeeDTO);
@@ -150,7 +150,7 @@ public class EmployeeController {
      *
      * @return
      */
-    @ApiOperation(value = "员工退出")
+    @Operation(summary = "员工退出")
     @PostMapping("/logout")
     public Result<String> logout() {
         return Result.success();
@@ -162,7 +162,7 @@ public class EmployeeController {
      * @return
      */
     @PutMapping("/editPassword")
-    @ApiOperation("修改密码")
+    @Operation(summary = "修改密码")
     public Result editPassword(@RequestBody PasswordEditDTO passwordEditDTO) {
         log.info("修改密码：{}", passwordEditDTO);
         employeeService.editPassword(passwordEditDTO);

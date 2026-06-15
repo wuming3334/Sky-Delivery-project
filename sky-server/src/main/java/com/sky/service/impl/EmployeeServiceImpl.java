@@ -20,15 +20,12 @@ import org.springframework.util.DigestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Properties;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private EmployeeMapper employeeMapper;
-    @Autowired
-    private Properties pageHelperProperties;
     @Autowired
     private EmployeeService employeeService;
 
